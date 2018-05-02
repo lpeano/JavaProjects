@@ -8,6 +8,7 @@ import java.util.Properties;
 
 public class JMXMain {
 	public static void main(String[] args)  {
+		
 		Properties ConfigFileProperties=System.getProperties();
 		OutputStream out=System.out;  
 		Collector collector = new Collector(ConfigFileProperties.getProperty("ConfigFile"));
