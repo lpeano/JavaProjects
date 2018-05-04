@@ -51,35 +51,12 @@ public class Collector extends ConfigurationJMXTOOL {
 	}
 
 	public List<String> startCollect(){
-		FileOutputStream fos = null;
+		String JsonCollectOutput="";
 		List<String> ReturnedValues=new ArrayList<String>();
 		for(Connection cn : super.getConn()){
+			JsonCollectOutput=DoCollect(cn).concat("\n");
 			if(!cn.getSpoolFile().equals("-")) {
-				try {
-					// Open File report
-					File  file = new File(cn.getSpoolFile());
-					fos = new FileOutputStream(file, true);
-					if (!file.exists()) {
-						file.createNewFile();
-					}
-					if(cn.isIsConnected()) {
-						fos.write(DoCollect(cn).concat("\n").getBytes());
-					}
-				} catch (FileNotFoundException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}finally{
-					try {
-						fos.close();
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				}
-				
+				SpoolToFile(JsonCollectOutput,cn);			
 			}
 			
 			if(cn.isIsConnected() && ( cn.getSpoolFile().equals("-") || cn.getSpoolFile().isEmpty())){
@@ -87,6 +64,33 @@ public class Collector extends ConfigurationJMXTOOL {
 			}
 		}
 		return(ReturnedValues);
+	}
+	
+	// Method to spool output to file.
+	private void SpoolToFile(String JsonString,Connection cn) {
+		FileOutputStream fos = null;
+		
+		File  file = new File(cn.getSpoolFile());
+
+		try {
+			if (!file.exists()) {
+				file.createNewFile();
+			}
+			fos = new FileOutputStream(file, true);
+			fos.write(JsonString.getBytes());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}finally {
+			try {
+				fos.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
+		
 	}
 	
 	private String DoCollect(Connection cn ){
@@ -174,26 +178,6 @@ public class Collector extends ConfigurationJMXTOOL {
 			return (retString);
 		//-------------------
 	}
-	
-	/*public void getAllObject(){
-	
-		for(Connection cn : super.getConn()){
-		try {
-			MBeanServerConnection mBeanServerConnection=cn.getjmxConnection().getMBeanServerConnection();
-			
-			Set<ObjectName> mbeans = mBeanServerConnection.queryNames(null, null);
-			for (Object mbean : mbeans)
-			{
-
-			}
-			
-			
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		}
-	}*/
 	
 	private static void WriteAttributes(final MBeanServerConnection mBeanServer, final ObjectName http,Object mb ,Document document,ObjectNode node,JsonNodeFactory factory)
 	        throws InstanceNotFoundException, IntrospectionException, ReflectionException, IOException, ParserConfigurationException
