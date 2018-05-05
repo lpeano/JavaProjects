@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +27,14 @@ import javax.management.openmbean.CompositeData;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+
+import org.elasticsearch.action.index.IndexRequestBuilder;
+import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.transport.TransportAddress;
+import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -61,7 +71,7 @@ public class Collector extends ConfigurationJMXTOOL {
 			
 			// If configured send data to elasticsearch
 			if(!cn.getEs_URL().isEmpty() && (!JsonCollectOutput.isEmpty())) {
-				SendDataToES(JsonCollectOutput);
+				SendDataToES(JsonCollectOutput,cn);
 			}
 			if(cn.isIsConnected() && ( cn.getSpoolFile().equals("-") || cn.getSpoolFile().isEmpty())){
 				ReturnedValues.add(DoCollect(cn));
@@ -70,8 +80,25 @@ public class Collector extends ConfigurationJMXTOOL {
 		return(ReturnedValues);
 	}
 	
-	private void SendDataToES(String jsonCollectOutput) {
+	private void SendDataToES(String jsonCollectOutput,Connection cn) {
 		// TODO Auto-generated method stub
+		@SuppressWarnings("resource")
+		TransportClient client = new PreBuiltTransportClient(Settings.EMPTY);
+		try {
+			client.addTransportAddress(new TransportAddress(InetAddress.getByName(cn.getEs_URL()), 9300));
+			IndexResponse response = client.prepareIndex("HostCollection",cn.getConnectionName())
+					.setSource(jsonCollectOutput, XContentType.JSON)
+					.get();
+			System.out.println("Elastic response is :"+response.status());
+			
+			
+		} catch (UnknownHostException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+		
 		
 	}
 	// Method to spool output to file.
