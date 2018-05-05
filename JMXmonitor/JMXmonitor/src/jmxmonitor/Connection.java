@@ -20,6 +20,10 @@ public class Connection {
 	private boolean IsConnected=false;
 	private ArrayList<String> QueryList=null;
 	private String SpoolFile="";
+	private String es_URL="";
+	private String es_user="";
+	private String es_pass="";
+	
 	public Connection() {
 		// TODO Auto-generated constructor stub
 		QueryList=new ArrayList<String>();
@@ -158,5 +162,47 @@ public class Connection {
 
 	public void setSpoolFile(String spoolFile) {
 		SpoolFile = spoolFile;
+	}
+
+
+
+
+	public String getEs_URL() {
+		return es_URL;
+	}
+
+
+
+
+	public void setEs_URL(String es_URL) {
+		this.es_URL = es_URL;
+	}
+
+
+
+
+	public String getEs_user() {
+		return es_user;
+	}
+
+
+
+
+	public void setEs_user(String es_user) {
+		this.es_user = es_user;
+	}
+
+
+
+
+	public String getEs_pass() {
+		return es_pass;
+	}
+
+
+
+
+	public void setEs_pass(String es_pass) {
+		this.es_pass = es_pass;
 	}
 }
