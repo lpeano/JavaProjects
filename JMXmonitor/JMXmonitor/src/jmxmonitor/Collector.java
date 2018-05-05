@@ -59,6 +59,10 @@ public class Collector extends ConfigurationJMXTOOL {
 				SpoolToFile(JsonCollectOutput,cn);			
 			}
 			
+			// If configured send data to elasticsearch
+			if(!cn.getEs_URL().isEmpty() && (!JsonCollectOutput.isEmpty())) {
+				SendDataToES(JsonCollectOutput);
+			}
 			if(cn.isIsConnected() && ( cn.getSpoolFile().equals("-") || cn.getSpoolFile().isEmpty())){
 				ReturnedValues.add(DoCollect(cn));
 			}
@@ -66,6 +70,10 @@ public class Collector extends ConfigurationJMXTOOL {
 		return(ReturnedValues);
 	}
 	
+	private void SendDataToES(String jsonCollectOutput) {
+		// TODO Auto-generated method stub
+		
+	}
 	// Method to spool output to file.
 	private void SpoolToFile(String JsonString,Connection cn) {
 		FileOutputStream fos = null;

@@ -51,6 +51,13 @@ public class ConfigurationJMXTOOL {
 				cn.setPassword(config.getString(conName.toString()+"_password"));
 				cn.setUserName(config.getString(conName.toString()+"_username"));
 				cn.setSpoolFile(config.getString(conName.toString()+"_output"));
+				cn.setEs_URL(config.getString(conName.toString()+"_output_es"));
+				if( cn.getEs_URL()==null) {
+					cn.setEs_URL("");
+				} else {
+					cn.setEs_user(config.getString(conName.toString()+"_output_es_user"));
+					cn.setEs_pass(config.getString(conName.toString()+"_output_es_pass"));
+				}
 				cn.setRemoteServerJMXUrl(config.getString(conName.toString()+"_connectionUrl"));
 				this.Conn.add(cn);
 				List<Object> Query_List = config.getList(conName.toString()+"_Queries");
