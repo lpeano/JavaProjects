@@ -1,7 +1,6 @@
 package jmxmonitor;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -24,23 +23,17 @@ import javax.management.ObjectName;
 import javax.management.ReflectionException;
 import javax.management.RuntimeMBeanException;
 import javax.management.openmbean.CompositeData;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
-import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
@@ -136,6 +129,7 @@ public class Collector extends ConfigurationJMXTOOL {
 			JsonNode rootNode = mapper.createObjectNode();
 		    final JsonNodeFactory factory = JsonNodeFactory.instance;
 		    String retString="";
+		    ArrayNode outerArray=null;
 		    Timestamp timestamp = new Timestamp(System.currentTimeMillis());
 		    
 			try {
@@ -144,33 +138,27 @@ public class Collector extends ConfigurationJMXTOOL {
 			ObjectName query;
 			for( Object q : cn.getQueryList()){
 				
-
+			
 			ArrayList<String> queries=(ArrayList<String>) super.getTemplates().get(q.toString());
 			for (Object qu11: queries){
-
+			if(super.getTemplateType(q.toString()).getyType().toString().equals("List")) {
+				outerArray = mapper.createArrayNode(); 
+				((ObjectNode)rootNode).set(super.getTemplateType(q.toString()).gettName(),outerArray);
+			}
 			try {
 				query = new ObjectName((String) qu11);
 				Set<ObjectName> mbeans;
 				try {
 					mbeans = mBeanServerConnection.queryNames(query, null);
 					try {
-					DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();	
-					DocumentBuilder documentBuilder;
-					try {
-						// XML implementation
-						documentBuilder = documentBuilderFactory.newDocumentBuilder();
-						Document document=documentBuilder.newDocument();
-						Element rootElement = (Element) ((Document) document).createElement("report");
-					    rootElement.setAttribute("Name", "report");
-					    document.appendChild((Node) rootElement);
-					    ((ObjectNode)rootNode).put("Timestamp", timestamp.toString());
+					    ((ObjectNode)rootNode).put("Timestamp", timestamp.toString()+"Z");
 					    ((ObjectNode)rootNode).put("HostName",cn.getConnectionName());
 					for (Object mbean : mbeans)
 					{
 						final ObjectNode node = factory.objectNode();
 						try {
 									try {
-										WriteAttributes( mBeanServerConnection, (ObjectName)mbean, (Object) mbean,document,node,factory);
+										WriteAttributes( mBeanServerConnection, (ObjectName)mbean, (Object) mbean,node,factory);
 									
 									} catch ( ParserConfigurationException e) {
 										// TODO Auto-generated catch block
@@ -180,14 +168,14 @@ public class Collector extends ConfigurationJMXTOOL {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
-						((ObjectNode)rootNode).set(node.get("Name").toString().replaceAll("\"", ""), node);
+						if(super.getTemplateType(q.toString()).getyType().toString().equals("List")) {
+							outerArray.add(node);
+						} else {
+							((ObjectNode)rootNode).set(node.get("Name").toString().replaceAll("\"", ""), node);
+						}
 					}
 					retString=(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(((ObjectNode)rootNode)));
 					} catch (IOException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
-					}
-					} catch (ParserConfigurationException e1) {
 						// TODO Auto-generated catch block
 						e1.printStackTrace();
 					}
@@ -214,7 +202,7 @@ public class Collector extends ConfigurationJMXTOOL {
 		//-------------------
 	}
 	
-	private static void WriteAttributes(final MBeanServerConnection mBeanServer, final ObjectName http,Object mb ,Document document,ObjectNode node,JsonNodeFactory factory)
+	private static void WriteAttributes(final MBeanServerConnection mBeanServer, final ObjectName http,Object mb ,ObjectNode node,JsonNodeFactory factory)
 	        throws InstanceNotFoundException, IntrospectionException, ReflectionException, IOException, ParserConfigurationException
 	{
 		
@@ -227,10 +215,7 @@ public class Collector extends ConfigurationJMXTOOL {
 			e.printStackTrace();
 		}
 		MBeanAttributeInfo[] attrInfo = info.getAttributes();
-	    Element rElement=document.getDocumentElement();	
-	    Element rootElement = (Element) ((Document) document).createElement("item");
 	    node.put("Name", http.getCanonicalName().toString());
-	    rootElement.setAttribute("Name", http.getCanonicalName().toString());
 	    for (MBeanAttributeInfo attr : attrInfo)
 	    {
 	       try {
@@ -269,23 +254,15 @@ public class Collector extends ConfigurationJMXTOOL {
 	    		if(attr.getType().toString().equals("javax.management.openmbean.CompositeData") && (((CompositeData) mBeanServer.getAttribute(http,attr.getName()) != null))){
 	    			final ObjectNode child = factory.objectNode();
 	    			mapV = toMap((CompositeData) mBeanServer.getAttribute(http,attr.getName()));
-	    			
-					Element el = (Element) ((Document) document).createElement(attr.getName());
 	    			for( Map.Entry<String, Object> pair: mapV.entrySet()){
 		    			putWithType(pair,child);
 	    			}
 	    			node.set(attr.getName(),child);
-	    			rootElement.appendChild(el);
-					
-	    			
-
 	    		}
 	    		if(attr.getType().toString().equals("double")){
 	    			node.put(attr.getName(),  (double) mBeanServer.getAttribute(http,attr.getName()));
 	    		}
 	    	}
-	    	rElement.appendChild(rootElement);
-			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 		} catch (AttributeNotFoundException e) {

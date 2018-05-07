@@ -25,10 +25,32 @@ public class ConfigurationJMXTOOL {
 	private HashMap<String,List<String>> Templates;
 	private List<String> server_Queries=null;
 	
+	class tType{
+		private String tType="";
+		private String tName="";
+		public tType(String tType,String tName) {
+			this.tType=tType;
+			this.tName=tName;
+		}
+		public String getyType() {
+			return this.tType;
+		}
+		public String gettName() {
+			return tName;
+		}
+	}
+	
+	private HashMap<String,tType> TemplateType;
+	
+	public tType getTemplateType(String tName) {
+		return (TemplateType.get(tName));
+	}
+	
 	public ConfigurationJMXTOOL ( String FilePah ){
 		this.ConfigurationFile=FilePah;
 		this.Conn=new ArrayList<Connection>();
 		this.Templates=new HashMap<String,List<String>>();
+		this.TemplateType=new HashMap<String,tType>();
 		Parameters params = new Parameters();
 		FileBasedConfigurationBuilder<FileBasedConfiguration> builder =
 			    new FileBasedConfigurationBuilder<FileBasedConfiguration>(PropertiesConfiguration.class)
@@ -72,11 +94,15 @@ public class ConfigurationJMXTOOL {
 			Configuration cnf=(Configuration) buildertpl.getConfiguration();
 			for (final Object TempName: TemplateList ){
 				List<Object> tmplsl=cnf.getList(TempName.toString());
+				
 				List<String> tpls = new ArrayList<String>();
 				for (final Object tmpl: tmplsl){
 					tpls.add(tmpl.toString());
+				
+					Templates.put(TempName.toString(), tpls);			
+					String type_rs[]=cnf.getString(TempName.toString().concat("_type")).split(",");
+					TemplateType.put(TempName.toString(), new tType(type_rs[0],type_rs[1]));
 				}
-				Templates.put(TempName.toString(), tpls);
 			}
 			
 		} catch (ConfigurationException e) {

@@ -23,6 +23,7 @@ public class Connection {
 	private String es_URL="";
 	private String es_user="";
 	private String es_pass="";
+
 	
 	public Connection() {
 		// TODO Auto-generated constructor stub
