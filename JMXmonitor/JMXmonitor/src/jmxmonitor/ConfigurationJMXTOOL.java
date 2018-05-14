@@ -74,6 +74,9 @@ public class ConfigurationJMXTOOL {
 				cn.setUserName(config.getString(conName.toString()+"_username"));
 				cn.setSpoolFile(config.getString(conName.toString()+"_output"));
 				cn.setEs_URL(config.getString(conName.toString()+"_output_es"));
+				if(config.getString(conName.toString()+"_output_es_port") != null ) {
+					cn.setEs_port(Integer.parseInt(config.getString(conName.toString()+"_output_es_port")));
+				}
 				if( cn.getEs_URL()==null) {
 					cn.setEs_URL("");
 				} else {

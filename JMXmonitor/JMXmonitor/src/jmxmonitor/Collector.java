@@ -3,10 +3,9 @@ package jmxmonitor;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -25,12 +24,20 @@ import javax.management.RuntimeMBeanException;
 import javax.management.openmbean.CompositeData;
 import javax.xml.parsers.ParserConfigurationException;
 
-import org.elasticsearch.action.index.IndexResponse;
-import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.transport.TransportAddress;
-import org.elasticsearch.common.xcontent.XContentType;
-import org.elasticsearch.transport.client.PreBuiltTransportClient;
+
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpHost;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.entity.ContentType;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
+import org.apache.http.impl.nio.reactor.IOReactorConfig;
+import org.apache.http.nio.entity.NStringEntity;
+import org.elasticsearch.client.Response;
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -74,11 +81,50 @@ public class Collector extends ConfigurationJMXTOOL {
 	}
 	
 	private void SendDataToES(String jsonCollectOutput,Connection cn) {
-		// TODO Auto-generated method stub
-		@SuppressWarnings("resource")
-		TransportClient client = new PreBuiltTransportClient(Settings.EMPTY);
+		// Basic Credentials
+		final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+		credentialsProvider.setCredentials(AuthScope.ANY,
+		        new UsernamePasswordCredentials(cn.getEs_user(), cn.getEs_pass()));
+		
+		// Connections
+		@SuppressWarnings("unused")
+		RestClientBuilder builder = RestClient.builder(new HttpHost(cn.getEs_URL(), cn.getEs_port()))
+		        .setHttpClientConfigCallback(new RestClientBuilder.HttpClientConfigCallback() {
+		            @Override
+		            public HttpAsyncClientBuilder customizeHttpClient(HttpAsyncClientBuilder httpClientBuilder) {
+		                return httpClientBuilder.setDefaultIOReactorConfig(
+		                        IOReactorConfig.custom().setIoThreadCount(1).build()).setDefaultCredentialsProvider(credentialsProvider);
+		            }
+		        });
+		@SuppressWarnings("unused")
+		RestClient restClinet= builder.build();
+		
+		
+		HttpEntity entity = new NStringEntity(jsonCollectOutput, ContentType.APPLICATION_JSON);
 		try {
-			client.addTransportAddress(new TransportAddress(InetAddress.getByName(cn.getEs_URL()), 9300));
+			Map<String, String> params = Collections.singletonMap("", "");
+			
+			Response respClient=restClinet.performRequest("POST", "/collector/".concat(cn.getConnectionName()).concat("/"),params,entity);
+			System.out.println("Response :"+respClient.toString());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}finally {
+			try {
+				restClinet.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
+		//response.isDone();
+		
+	/*	@SuppressWarnings("resource")
+		Settings settings= Settings.EMPTY;
+		TransportClient client = new PreBuiltTransportClient(settings);
+		try {
+			client.addTransportAddress(new TransportAddress(InetAddress.getByName(cn.getEs_URL()), cn.getEs_port()));
 			IndexResponse response = client.prepareIndex("HostCollection",cn.getConnectionName())
 					.setSource(jsonCollectOutput, XContentType.JSON)
 					.get();
@@ -88,7 +134,9 @@ public class Collector extends ConfigurationJMXTOOL {
 		} catch (UnknownHostException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
+		}finally {
+			client.close();
+		}*/
 		
 		
 		
@@ -97,15 +145,19 @@ public class Collector extends ConfigurationJMXTOOL {
 	// Method to spool output to file.
 	private void SpoolToFile(String JsonString,Connection cn) {
 		FileOutputStream fos = null;
-		
+	
 		File  file = new File(cn.getSpoolFile());
 
 		try {
 			if (!file.exists()) {
-				file.createNewFile();
+				file.createNewFile();		
+				fos = new FileOutputStream(file, true);
+				fos.write(JsonString.getBytes());
+			}else {
+				fos = new FileOutputStream(file, true);
+				fos.write((",".concat(JsonString)).getBytes());
 			}
-			fos = new FileOutputStream(file, true);
-			fos.write(JsonString.getBytes());
+	
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -151,7 +203,7 @@ public class Collector extends ConfigurationJMXTOOL {
 				try {
 					mbeans = mBeanServerConnection.queryNames(query, null);
 					try {
-					    ((ObjectNode)rootNode).put("Timestamp", timestamp.toString()+"Z");
+					    ((ObjectNode)rootNode).put("Timestamp", timestamp.toLocalDateTime().toString());
 					    ((ObjectNode)rootNode).put("HostName",cn.getConnectionName());
 					for (Object mbean : mbeans)
 					{

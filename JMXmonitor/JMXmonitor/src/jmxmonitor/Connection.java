@@ -23,6 +23,7 @@ public class Connection {
 	private String es_URL="";
 	private String es_user="";
 	private String es_pass="";
+	private Integer es_port=0;
 
 	
 	public Connection() {
@@ -205,5 +206,19 @@ public class Connection {
 
 	public void setEs_pass(String es_pass) {
 		this.es_pass = es_pass;
+	}
+
+
+
+
+	public Integer getEs_port() {
+		return es_port;
+	}
+
+
+
+
+	public void setEs_port(Integer es_port) {
+		this.es_port = es_port;
 	}
 }
