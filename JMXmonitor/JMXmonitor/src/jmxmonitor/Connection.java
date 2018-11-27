@@ -24,6 +24,8 @@ public class Connection {
 	private String es_user="";
 	private String es_pass="";
 	private Integer es_port=0;
+	private Boolean PrettyJson=false;
+	
 
 	
 	public Connection() {
@@ -220,5 +222,19 @@ public class Connection {
 
 	public void setEs_port(Integer es_port) {
 		this.es_port = es_port;
+	}
+
+
+
+
+	public Boolean getPrettyJson() {
+		return PrettyJson;
+	}
+
+
+
+
+	public void setPrettyJson(Boolean prettyJson) {
+		PrettyJson = prettyJson;
 	}
 }

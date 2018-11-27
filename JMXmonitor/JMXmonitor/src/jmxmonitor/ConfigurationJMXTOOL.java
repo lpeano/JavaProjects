@@ -73,6 +73,7 @@ public class ConfigurationJMXTOOL {
 				cn.setPassword(config.getString(conName.toString()+"_password"));
 				cn.setUserName(config.getString(conName.toString()+"_username"));
 				cn.setSpoolFile(config.getString(conName.toString()+"_output"));
+				cn.setPrettyJson(Boolean.valueOf(config.getString(conName.toString()+"_JsonPrettyFormat")));
 				cn.setEs_URL(config.getString(conName.toString()+"_output_es"));
 				if(config.getString(conName.toString()+"_output_es_port") != null ) {
 					cn.setEs_port(Integer.parseInt(config.getString(conName.toString()+"_output_es_port")));

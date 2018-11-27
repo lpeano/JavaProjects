@@ -155,7 +155,7 @@ public class Collector extends ConfigurationJMXTOOL {
 				fos.write(JsonString.getBytes());
 			}else {
 				fos = new FileOutputStream(file, true);
-				fos.write((",".concat(JsonString)).getBytes());
+				fos.write((JsonString).getBytes());
 			}
 	
 		} catch (IOException e) {
@@ -173,6 +173,7 @@ public class Collector extends ConfigurationJMXTOOL {
 		
 	}
 	
+
 	private String DoCollect(Connection cn ){
 		//-------------------
      
@@ -193,6 +194,7 @@ public class Collector extends ConfigurationJMXTOOL {
 			
 			ArrayList<String> queries=(ArrayList<String>) super.getTemplates().get(q.toString());
 			for (Object qu11: queries){
+			Thread.sleep(10L);
 			if(super.getTemplateType(q.toString()).getyType().toString().equals("List")) {
 				outerArray = mapper.createArrayNode(); 
 				((ObjectNode)rootNode).set(super.getTemplateType(q.toString()).gettName(),outerArray);
@@ -203,10 +205,11 @@ public class Collector extends ConfigurationJMXTOOL {
 				try {
 					mbeans = mBeanServerConnection.queryNames(query, null);
 					try {
-					    ((ObjectNode)rootNode).put("Timestamp", timestamp.toLocalDateTime().toString());
+					    ((ObjectNode)rootNode).put("@timestamp", timestamp.toLocalDateTime().toString());
 					    ((ObjectNode)rootNode).put("HostName",cn.getConnectionName());
 					for (Object mbean : mbeans)
 					{
+						
 						final ObjectNode node = factory.objectNode();
 						try {
 									try {
@@ -226,7 +229,12 @@ public class Collector extends ConfigurationJMXTOOL {
 							((ObjectNode)rootNode).set(node.get("Name").toString().replaceAll("\"", ""), node);
 						}
 					}
-					retString=(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(((ObjectNode)rootNode)));
+					if(cn.getPrettyJson()==true) {
+						retString=(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(((ObjectNode)rootNode)));
+					} else {
+						retString=(mapper.writer().writeValueAsString(((ObjectNode)rootNode)));
+					}
+						
 					} catch (IOException e1) {
 						// TODO Auto-generated catch block
 						e1.printStackTrace();
@@ -246,6 +254,9 @@ public class Collector extends ConfigurationJMXTOOL {
 			}
 			}
 			} catch (IOException e2) {
+				// TODO Auto-generated catch block
+				e2.printStackTrace();
+			} catch (InterruptedException e2) {
 				// TODO Auto-generated catch block
 				e2.printStackTrace();
 			}
@@ -270,6 +281,12 @@ public class Collector extends ConfigurationJMXTOOL {
 	    node.put("Name", http.getCanonicalName().toString());
 	    for (MBeanAttributeInfo attr : attrInfo)
 	    {
+	    	try {
+				Thread.sleep(1L);
+			} catch (InterruptedException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
 	       try {
 
 	    	if(!attr.getName().toString().equals("UsageThreshold")){
