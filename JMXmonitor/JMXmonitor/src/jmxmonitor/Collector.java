@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.management.Attribute;
+import javax.management.AttributeList;
 import javax.management.AttributeNotFoundException;
 import javax.management.InstanceNotFoundException;
 import javax.management.IntrospectionException;
@@ -194,7 +196,6 @@ public class Collector extends ConfigurationJMXTOOL {
 			
 			ArrayList<String> queries=(ArrayList<String>) super.getTemplates().get(q.toString());
 			for (Object qu11: queries){
-			Thread.sleep(10L);
 			if(super.getTemplateType(q.toString()).getyType().toString().equals("List")) {
 				outerArray = mapper.createArrayNode(); 
 				((ObjectNode)rootNode).set(super.getTemplateType(q.toString()).gettName(),outerArray);
@@ -205,7 +206,7 @@ public class Collector extends ConfigurationJMXTOOL {
 				try {
 					mbeans = mBeanServerConnection.queryNames(query, null);
 					try {
-					    ((ObjectNode)rootNode).put("@timestamp", timestamp.toLocalDateTime().toString());
+					    ((ObjectNode)rootNode).put("@timestamp", timestamp.toLocalDateTime().toString()+"+01:00");
 					    ((ObjectNode)rootNode).put("HostName",cn.getConnectionName());
 					for (Object mbean : mbeans)
 					{
@@ -256,9 +257,6 @@ public class Collector extends ConfigurationJMXTOOL {
 			} catch (IOException e2) {
 				// TODO Auto-generated catch block
 				e2.printStackTrace();
-			} catch (InterruptedException e2) {
-				// TODO Auto-generated catch block
-				e2.printStackTrace();
 			}
 			
 			return (retString);
@@ -279,57 +277,71 @@ public class Collector extends ConfigurationJMXTOOL {
 		}
 		MBeanAttributeInfo[] attrInfo = info.getAttributes();
 	    node.put("Name", http.getCanonicalName().toString());
+	    
+	    /*Generate Array of attributes*/
+	    ArrayList<String> Attributes= new ArrayList<String>();
+	    for (MBeanAttributeInfo attr : attrInfo) {
+	    	Attributes.add(attr.getName().toString());
+	    }
+	    String [] AttribArray= new String[Attributes.size()];
+	    AttribArray=Attributes.toArray(AttribArray);
+	    AttributeList Attrs=mBeanServer.getAttributes(http,AttribArray);
 	    for (MBeanAttributeInfo attr : attrInfo)
 	    {
-	    	try {
-				Thread.sleep(1L);
-			} catch (InterruptedException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
 	       try {
 
 	    	if(!attr.getName().toString().equals("UsageThreshold")){
 	    		if(attr.getType().toString().equals("java.lang.String")){
-	    			node.put(attr.getName(), (String) mBeanServer.getAttribute(http,attr.getName()));
+	    			//node.put(attr.getName(), (String) mBeanServer.getAttribute(http,attr.getName()));
+	    			node.put(attr.getName(), (String) findAttribute(Attrs,attr.getName()).getValue());
 	    		}
 	    		if(attr.getType().toString().equals("boolean")){
-	    			node.put(attr.getName(),  (boolean)mBeanServer.getAttribute(http,attr.getName()));
+	    			//node.put(attr.getName(),  (boolean)mBeanServer.getAttribute(http,attr.getName()));
+	    			if(findAttribute(Attrs,attr.getName())!=null) {
+	    				node.put(attr.getName(), (boolean) (findAttribute(Attrs,attr.getName()).getValue()));
+	    			}
 	    		}
 	    		if(attr.getType().toString().equals("java.lang.Boolean")){
-	    			node.put(attr.getName(), (Boolean) mBeanServer.getAttribute(http,attr.getName()));
+	    			//node.put(attr.getName(), (Boolean) mBeanServer.getAttribute(http,attr.getName()));
+	    			node.put(attr.getName(), (Boolean) (findAttribute(Attrs,attr.getName()).getValue()));
 	    		}
 	    		if(attr.getType().toString().equals("java.lang.Long")){
 	    			if((mBeanServer.getAttribute(http,attr.getName()))!=null){
-		    			node.put(attr.getName(), (Long) mBeanServer.getAttribute(http,attr.getName()));
+		    			//node.put(attr.getName(), (Long) mBeanServer.getAttribute(http,attr.getName()));
+		    			node.put(attr.getName(), (Long) (findAttribute(Attrs,attr.getName()).getValue()));
 	    			}
 	    		}
 	    		if(attr.getType().toString().equals("long")){
 	    			if((mBeanServer.getAttribute(http,attr.getName()))!=null){
-		    			node.put(attr.getName(), (long) mBeanServer.getAttribute(http,attr.getName()));
+		    			//node.put(attr.getName(), (long) mBeanServer.getAttribute(http,attr.getName()));
+		    			node.put(attr.getName(), (long) (findAttribute(Attrs,attr.getName()).getValue()));
 	    			}
 	    		}
 	    		if(attr.getType().toString().equals("java.lang.Integer")){
 	    			if((mBeanServer.getAttribute(http,attr.getName()))!=null){
-		    			node.put(attr.getName(),  (Integer) mBeanServer.getAttribute(http,attr.getName()));
+		    			//node.put(attr.getName(),  (Integer) mBeanServer.getAttribute(http,attr.getName()));
+		    			node.put(attr.getName(), (Integer) findAttribute(Attrs,attr.getName()).getValue());
 	    			}
 	    		}
 	    		if(attr.getType().toString().equals("int")){
 	    			if((mBeanServer.getAttribute(http,attr.getName()))!=null){
-	    				node.put(attr.getName(), (int)  mBeanServer.getAttribute(http,attr.getName()));
+	    				//node.put(attr.getName(), (int)  mBeanServer.getAttribute(http,attr.getName()));
+	    				node.put(attr.getName(), (int) findAttribute(Attrs,attr.getName()).getValue());
 	    			}
 	    		}
 	    		
 	    		if(attr.getType().toString().equals("javax.management.openmbean.CompositeData") && (((CompositeData) mBeanServer.getAttribute(http,attr.getName()) != null))){
 	    			final ObjectNode child = factory.objectNode();
-	    			mapV = toMap((CompositeData) mBeanServer.getAttribute(http,attr.getName()));
+	    			//mapV = toMap((CompositeData) mBeanServer.getAttribute(http,attr.getName()));
+	    			mapV=toMap((CompositeData) (findAttribute(Attrs,attr.getName())).getValue());
 	    			for( Map.Entry<String, Object> pair: mapV.entrySet()){
 		    			putWithType(pair,child);
 	    			}
 	    			node.set(attr.getName(),child);
 	    		}
 	    		if(attr.getType().toString().equals("double")){
-	    			node.put(attr.getName(),  (double) mBeanServer.getAttribute(http,attr.getName()));
+	    			//node.put(attr.getName(),  (double) mBeanServer.getAttribute(http,attr.getName()));
+	    			node.put(attr.getName(), (double) findAttribute(Attrs,attr.getName()).getValue());
 	    		}
 	    	}
 		} catch (IOException e) {
@@ -365,6 +377,15 @@ public class Collector extends ConfigurationJMXTOOL {
 		if(pair.getValue() instanceof double[]){
 			child.put(pair.getKey().toString(), (double)pair.getValue());
 		}
+	}
+	
+	private static Attribute findAttribute(AttributeList AttributeL,String ToFind) {
+		for(Object at : AttributeL) {
+			if(((Attribute)at).getName().equals(ToFind)) {
+				return ((Attribute)at);
+			}
+		}
+		return null;
 	}
 	private static Map<String, Object> toMap(CompositeData data)
 	{
